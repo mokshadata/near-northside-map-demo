@@ -9,9 +9,10 @@ var map = new mapboxgl.Map({
   antialias: true
 });
 
+var handlers = initEventHandlers(map);
+
 // Add zoom and rotation controls to the map.
 map.addControl(new mapboxgl.NavigationControl());
-var handlers = initEventHandlers(map);
 
 // The 'building' layer in the mapbox-streets vector source contains building-height
 // data from OpenStreetMap.
@@ -31,12 +32,15 @@ map.on('load', function () {
 
   map.getCanvas().focus();
   map.getCanvas().addEventListener('keydown', handlers.handleKeyDown, true);
-  // When the user moves their mouse over the parcel-fill layer, we'll update the
-  // feature parcel for the feature under the mouse.
+
   map.on('mousemove', 'parcel-fills', handlers.handleMouseMoveOnParcels);
-  // When the mouse leaves the parcel-fill layer, update the feature parcel of the
-  // previously hovered feature.
   map.on('mouseleave', 'parcel-fills', handlers.handleMouseLeaveOnParcels);
+
+  map.on('mousemove', 'parcel-no-vals', handlers.handleMouseMoveOnParcels);
+  map.on('mouseleave', 'parcel-no-vals', handlers.handleMouseLeaveOnParcels);
+
+  map.on('click', 'parcel-fills', handlers.handleClick);
+  map.on('click', 'parcel-no-vals', handlers.handleClick);
 
   // Insert the following layers beneath any symbol layer.
   var layers = map.getStyle().layers;
@@ -91,6 +95,19 @@ map.on('load', function () {
           7812400,
           ['to-color', '#006d2c']
         ]
+      }
+    },
+    labelLayerId
+  );
+
+  map.addLayer({
+      'id': 'parcel-no-vals',
+      'type': 'fill',
+      'source': 'parcels',
+      'layout': {},
+      'filter': ["any", ['==', 0, ['get', 'tot_appr_val']], ['!', ["to-boolean", ['get', 'tot_appr_val']]]],
+      'paint': {
+        'fill-color': 'rgba(255, 255, 255, 0)'
       }
     },
     labelLayerId

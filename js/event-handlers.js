@@ -1,3 +1,14 @@
+function formatDataForPopup(data) {
+  return Object.entries(data).map(function ([heading, value]) {
+    return `<strong>${heading}</strong> ${value}`
+  }).join('</br>')
+}
+
+function formatCurrency(value) {
+  return value && numeral(value).format('$ 0,0[.]00') || 'N/A'
+}
+
+
 function initEventHandlers(map) {
 
   // pixels the map pans when the up or down arrow is clicked
@@ -51,8 +62,18 @@ function initEventHandlers(map) {
   function showValueForParcel(e) {
     map.getCanvas().style.cursor = 'pointer';
 
+    if (!e.features[0]) {
+      return
+    }
+
     // var coordinates = e.features[0].geometry.coordinates.slice();
-    var currency = e.features[0].properties.tot_appr_val && numeral(e.features[0].properties.tot_appr_val).format('$ 0,0[.]00') || 'N/A'
+
+    var dataForPopup = {
+      'HCAD Address': e.features[0].properties.name,
+      'Total Appraisal Value': formatCurrency(e.features[0].properties.tot_appr_val),
+      'Land Area': `${e.features[0].properties.land_ar} sqft`,
+      'Total Land Value': formatCurrency(e.features[0].properties.land_val),
+    }
 
     // Ensure that if the map is zoomed out such that multiple
     // copies of the feature are visible, the popup appears
@@ -66,8 +87,15 @@ function initEventHandlers(map) {
     // based on the feature found.
     popup
       .setLngLat(e.lngLat)
-      .setHTML('<div style="text-align: center;">' + e.features[0].properties.name + '<br/>' + currency + '</div>')
+      .setHTML(formatDataForPopup(dataForPopup))
       .addTo(map);
+  }
+
+  function handleClick(e) {
+    map.flyTo({
+      center: e.lngLat,
+      essential: true // this animation is considered essential with respect to prefers-reduced-motion
+    });
   }
 
   function handleMouseMoveOnParcels(e) {
@@ -102,6 +130,7 @@ function initEventHandlers(map) {
   return {
     handleKeyDown: handleKeyDown,
     handleMouseMoveOnParcels: handleMouseMoveOnParcels,
-    handleMouseLeaveOnParcels: handleMouseLeaveOnParcels
+    handleMouseLeaveOnParcels: handleMouseLeaveOnParcels,
+    handleClick: handleClick,
   }
 }
